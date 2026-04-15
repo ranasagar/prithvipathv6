@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-primary: #0072B5; /* Logo Blue */
+  --color-primary-foreground: #ffffff;
+  --color-accent: #b91c1c; /* Keep red as accent */
+  --radius-xl: var(--app-radius-xl, 1rem);
+  --radius-2xl: var(--app-radius-2xl, 1.5rem);
+  --radius-3xl: var(--app-radius-3xl, 2.5rem);
+  --radius-4xl: var(--app-radius-4xl, 4rem);
+  --radius-cat-hero: var(--app-category-hero-radius, 2.5rem);
+
+  /* Fluid Typography */
+  --text-xxs: clamp(0.6rem, 0.55rem + 0.15vw, 0.7rem);
+  --text-xxs--line-height: 1.4;
+  --text-xs: clamp(0.75rem, 0.717rem + 0.164vw, 0.875rem);
+  --text-xs--line-height: 1.4;
+  --text-sm: clamp(0.875rem, 0.842rem + 0.164vw, 1rem);
+  --text-sm--line-height: 1.4;
+  --text-base: clamp(1rem, 0.967rem + 0.164vw, 1.125rem);
+  --text-base--line-height: 1.5;
+  --text-lg: clamp(1.125rem, 1.092rem + 0.164vw, 1.25rem);
+  --text-lg--line-height: 1.5;
+  --text-xl: clamp(1.25rem, 1.185rem + 0.329vw, 1.5rem);
+  --text-xl--line-height: 1.4;
+  --text-2xl: clamp(1.5rem, 1.402rem + 0.493vw, 1.875rem);
+  --text-2xl--line-height: 1.3;
+  --text-3xl: clamp(1.875rem, 1.777rem + 0.493vw, 2.25rem);
+  --text-3xl--line-height: 1.2;
+  --text-4xl: clamp(2.25rem, 2.053rem + 0.986vw, 3rem);
+  --text-4xl--line-height: 1.1;
+  --text-5xl: clamp(3rem, 2.737rem + 1.315vw, 4rem);
+  --text-5xl--line-height: 1.1;
+  --text-6xl: clamp(3.75rem, 3.422rem + 1.64vw, 5rem);
+  --text-6xl--line-height: 1.1;
+  --text-7xl: clamp(4.5rem, 4.106rem + 1.97vw, 6rem);
+  --text-7xl--line-height: 1.1;
+  --text-8xl: clamp(6rem, 5.474rem + 2.63vw, 8rem);
+  --text-8xl--line-height: 1;
+  --text-9xl: clamp(8rem, 7.474rem + 2.63vw, 10rem);
+  --text-9xl--line-height: 1;
+}
+
+:root {
+  --app-radius: 40px; /* Base for 2.5rem components (rounded-3xl) */
+  --app-category-hero-radius: 40px; /* Base for category hero images */
+  --app-radius-xl: calc(var(--app-radius) * 0.4); /* ~16px (rounded-xl) */
+  --app-radius-2xl: calc(var(--app-radius) * 0.8); /* ~32px (rounded-2xl) */
+  --app-radius-3xl: var(--app-radius); /* ~40px (rounded-3xl) */
+  --app-radius-4xl: calc(var(--app-radius) * 1.6); /* ~64px (rounded-4xl) */
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-primary/20 selection:text-primary;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .news-card-hover {
+    @apply transition-all duration-500 hover:shadow-2xl hover:-translate-y-2;
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border-b border-white/20;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full border-2 border-slate-100 hover:bg-slate-400 transition-colors;
+  }
+
+  .prose-nepali {
+    line-height: 1.9;
+    @apply text-lg text-slate-700 font-medium;
+  }
+
+  .article-content-body {
+    @apply text-slate-800 leading-relaxed text-xl;
+  }
+
+  .article-content-body p {
+    @apply mb-8;
+  }
+
+  .article-content-body h2 {
+    @apply text-3xl font-black text-slate-900 mt-16 mb-8 tracking-tight;
+  }
+
+  .article-content-body h3 {
+    @apply text-2xl font-black text-slate-900 mt-12 mb-6 tracking-tight;
+  }
+
+  .article-content-body img {
+    @apply rounded-4xl shadow-2xl my-16 w-full object-cover ring-1 ring-black/5;
+  }
+
+  .article-content-body blockquote {
+    @apply border-l-[12px] border-primary pl-10 py-6 my-14 italic text-3xl font-black text-slate-900 bg-slate-100 rounded-r-4xl shadow-inner;
+  }
+
+  .article-content-body ul, .article-content-body ol {
+    @apply mb-10 ml-8;
+  }
+
+  .article-content-body li {
+    @apply mb-4 list-disc marker:text-primary;
+  }
+
+  .article-content-body a {
+    @apply text-primary font-black underline decoration-4 underline-offset-4 hover:text-accent transition-all decoration-primary/30 hover:decoration-accent;
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 40s linear infinite;
+  }
+
+  @keyframes tilt {
+    0%, 50%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+  }
+  .animate-tilt {
+    animation: tilt 10s infinite linear;
+  }
+
+  @keyframes highlight-flash {
+    0% { outline: 6px solid transparent; background-color: transparent; }
+    20% { outline: 6px solid var(--color-primary); background-color: rgba(0, 114, 181, 0.1); }
+    100% { outline: 6px solid transparent; background-color: transparent; }
+  }
+  .highlight-target {
+    animation: highlight-flash 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

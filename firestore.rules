@@ -1,0 +1,368 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, displayName, role (admin|editor|user), photoURL, createdAt, bio, location, website, facebook, twitter, instagram, roleRequest
+    //
+    // Collection: categories
+    // Fields: nameNepali, nameEnglish, slug, order, homepageStyle, postCount, isHidden
+    //
+    // Collection: articles
+    // Fields: title, content, excerpt, categoryId, authorId, authorName, authorPhoto, status (draft|published), featuredImage, videoUrl, views, commentCount, isBreaking, isFeatured, districts, sourceUrls, editHistory, createdAt, updatedAt
+    //
+    // Collection: settings
+    // Fields: siteName, logoUrl, liveVideoUrl, liveVideoType, contactEmail, facebookUrl, twitterUrl, youtubeUrl
+    //
+    // Collection: liveChat
+    // Fields: uid, user, text, createdAt, isSponsored
+    //
+    // Collection: comments
+    // Fields: articleId, userName, content, createdAt
+    //
+    // Collection: ads
+    // Fields: title, imageUrl, linkUrl, position, isActive, createdAt, updatedAt
+    //
+    // Collection: notifications
+    // Fields: title, message, type, isRead, createdAt, articleId
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "sagarrana@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isEditor() {
+      return isAuthenticated() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor')
+      );
+    }
+
+    function isRecent(time) {
+      return time > request.time - duration.value(10, 'm') && time <= request.time;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.email is string && isValidEmail(data.email) && data.email.size() < 256 &&
+             data.role in ['admin', 'editor', 'user'] &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 1000)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 1000)) &&
+             (!('location' in data) || (data.location is string && data.location.size() < 100)) &&
+             (!('website' in data) || (data.website is string && data.website.size() < 256)) &&
+             (!('facebook' in data) || (data.facebook is string && data.facebook.size() < 256)) &&
+             (!('twitter' in data) || (data.twitter is string && data.twitter.size() < 256)) &&
+             (!('instagram' in data) || (data.instagram is string && data.instagram.size() < 256)) &&
+             (!('roleRequest' in data) || (
+               data.roleRequest is map &&
+               data.roleRequest.keys().hasAll(['requestedRole', 'status', 'requestedAt']) &&
+               data.roleRequest.requestedRole in ['admin', 'editor', 'user'] &&
+               data.roleRequest.status in ['pending', 'approved', 'rejected'] &&
+               data.roleRequest.requestedAt is string
+             ));
+    }
+
+    function isValidArticle(data) {
+      return data.keys().hasAll(['title', 'content', 'categoryId', 'authorId', 'status']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 500000 &&
+             data.status in ['draft', 'published'] &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             data.categoryId is string && data.categoryId.size() > 0 &&
+             (!('districts' in data) || (data.districts is list && data.districts.size() <= 77)) &&
+             (!('excerpt' in data) || (data.excerpt is string && data.excerpt.size() < 2000)) &&
+             (!('featuredImage' in data) || (data.featuredImage is string && data.featuredImage.size() < 1000)) &&
+             (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() < 1000)) &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() < 100)) &&
+             (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() < 1000)) &&
+             (!('views' in data) || data.views is number) &&
+             (!('commentCount' in data) || data.commentCount is number) &&
+             (!('isBreaking' in data) || data.isBreaking is bool) &&
+             (!('isFeatured' in data) || data.isFeatured is bool) &&
+             (!('sourceUrls' in data) || (data.sourceUrls is list && data.sourceUrls.size() < 20)) &&
+             (!('editHistory' in data) || (data.editHistory is list && data.editHistory.size() < 100));
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['nameNepali', 'slug']) &&
+             data.nameNepali is string && data.nameNepali.size() > 0 && data.nameNepali.size() < 100 &&
+             data.slug is string && data.slug.size() > 0 && data.slug.size() < 100 &&
+             (!('nameEnglish' in data) || (data.nameEnglish is string && data.nameEnglish.size() < 100)) &&
+             (!('order' in data) || data.order is number) &&
+             (!('homepageStyle' in data) || data.homepageStyle is string) &&
+             (!('postCount' in data) || data.postCount is number) &&
+             (!('isHidden' in data) || data.isHidden is bool);
+    }
+
+    function isValidAd(data) {
+      return data.keys().hasAll(['title', 'imageUrl', 'linkUrl', 'position', 'isActive']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.imageUrl is string && isValidUrl(data.imageUrl) &&
+             data.linkUrl is string && isValidUrl(data.linkUrl) &&
+             data.position in ['sidebar', 'homepage_mid', 'article_bottom', 'header'] &&
+             data.isActive is bool;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['title', 'message', 'type', 'isRead', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 1000 &&
+             data.type in ['info', 'success', 'error', 'warning'] &&
+             data.isRead is bool &&
+             (!('articleId' in data) || (data.articleId is string && data.articleId.size() < 128));
+    }
+
+    function isValidCommunityPost(data) {
+      return data.keys().hasAll(['title', 'content', 'authorId', 'status']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 300 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.status in ['active', 'removed', 'flagged'];
+    }
+
+    function isValidCommunityComment(data) {
+      return data.keys().hasAll(['postId', 'authorId', 'text']) &&
+             data.postId is string &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000;
+    }
+
+    function isValidCommunityVote(data) {
+      return data.keys().hasAll(['userId', 'targetId', 'type']) &&
+             data.userId == request.auth.uid &&
+             data.type in ['up', 'down'];
+    }
+
+    function isValidCommunityReport(data) {
+      return data.keys().hasAll(['reporterId', 'targetId', 'targetType', 'reason', 'status']) &&
+             data.reporterId == request.auth.uid &&
+             data.targetType in ['post', 'comment'] &&
+             data.status in ['pending', 'resolved'];
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['articleId', 'userName', 'content', 'createdAt']) &&
+             data.articleId is string && data.articleId.size() > 0 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['uid', 'user', 'text', 'createdAt']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.user is string && data.user.size() > 0 && data.user.size() < 100 &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.createdAt is timestamp && isRecent(data.createdAt);
+    }
+
+    function isValidModel(data) {
+      return data.keys().hasAll(['name', 'profileImage', 'category', 'gender', 'location']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.profileImage is string && isValidUrl(data.profileImage) &&
+             data.category in ['Fashion', 'Commercial', 'Actor', 'Influencer'] &&
+             data.gender in ['Male', 'Female', 'Other'] &&
+             data.location is string && data.location.size() > 0 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 5000)) &&
+             (!('age' in data) || data.age is number) &&
+             (!('height' in data) || data.height is string) &&
+             (!('weight' in data) || data.weight is string) &&
+             (!('experienceYears' in data) || data.experienceYears is number) &&
+             (!('languages' in data) || (data.languages is list && data.languages.size() < 20)) &&
+             (!('skills' in data) || (data.skills is list && data.skills.size() < 50)) &&
+             (!('isVerified' in data) || data.isVerified is bool) &&
+             (!('isFeatured' in data) || data.isFeatured is bool) &&
+             (!('gallery' in data) || (data.gallery is list && data.gallery.size() < 100));
+    }
+
+    function isValidGalleryReaction(data) {
+      return data.keys().hasAll(['modelId', 'imageId', 'userId', 'type', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.type in ['like', 'heart', 'wow', 'clap'];
+    }
+
+    function isValidGalleryComment(data) {
+      return data.keys().hasAll(['modelId', 'imageId', 'userId', 'userName', 'text', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000;
+    }
+
+    function isValidModelInquiry(data) {
+      return data.keys().hasAll(['modelId', 'name', 'email', 'projectType', 'status']) &&
+             data.modelId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.projectType in ['Photoshoot', 'Music Video', 'Movie', 'Advertisement', 'Other'] &&
+             data.status in ['new', 'contacted', 'closed'] &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 50)) &&
+             (!('budget' in data) || (data.budget is string && data.budget.size() < 100)) &&
+             (!('message' in data) || (data.message is string && data.message.size() < 5000));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin() || isEditor();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId);
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if resource == null || resource.data.status == 'published' || isEditor();
+      allow create: if isEditor() && isValidArticle(request.resource.data);
+      allow update: if isEditor() && isValidArticle(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isValidComment(request.resource.data);
+      allow update: if isEditor();
+      allow delete: if isEditor();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ads/{adId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /liveChat/{messageId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidChatMessage(request.resource.data);
+      allow delete: if isEditor();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create: if isEditor();
+      allow update: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /communityPosts/{postId} {
+      allow read: if resource == null || resource.data.status == 'active' || isEditor();
+      allow create: if isAuthenticated() && isValidCommunityPost(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (isOwner(resource.data.authorId) && request.resource.data.status == resource.data.status) ||
+        isEditor()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /communityComments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidCommunityComment(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.authorId) || isEditor());
+      allow delete: if isAuthenticated() && (isOwner(resource.data.authorId) || isEditor());
+    }
+
+    match /communityVotes/{voteId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isValidCommunityVote(request.resource.data);
+    }
+
+    match /communityReports/{reportId} {
+      allow read: if isEditor();
+      allow create: if isAuthenticated() && isValidCommunityReport(request.resource.data);
+      allow update: if isEditor();
+      allow delete: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+
+    match /events/{eventId}/media/{mediaId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+
+    match /models/{modelId} {
+      allow read: if true;
+      allow create: if isEditor() && isValidModel(request.resource.data);
+      allow update: if isEditor() && isValidModel(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /modelInquiries/{inquiryId} {
+      allow read: if isEditor();
+      allow create: if isValidModelInquiry(request.resource.data);
+      allow update: if isEditor();
+      allow delete: if isAdmin();
+    }
+
+    match /menuItems/{menuId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /galleryReactions/{reactionId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isValidGalleryReaction(request.resource.data);
+    }
+
+    match /galleryComments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidGalleryComment(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isEditor());
+    }
+  }
+}

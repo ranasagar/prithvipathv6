@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "editor", "user"] },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "bio": { "type": "string" },
+        "location": { "type": "string" },
+        "website": { "type": "string" },
+        "facebook": { "type": "string" },
+        "twitter": { "type": "string" },
+        "instagram": { "type": "string" },
+        "roleRequest": {
+          "type": "object",
+          "properties": {
+            "requestedRole": { "type": "string", "enum": ["admin", "editor", "user"] },
+            "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+            "requestedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "News category",
+      "type": "object",
+      "properties": {
+        "nameNepali": { "type": "string" },
+        "nameEnglish": { "type": "string" },
+        "slug": { "type": "string" },
+        "order": { "type": "number" },
+        "homepageStyle": { "type": "string" },
+        "postCount": { "type": "number" },
+        "isHidden": { "type": "boolean" }
+      },
+      "required": ["nameNepali", "slug"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "News article",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "featuredImage": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "views": { "type": "number" },
+        "commentCount": { "type": "number" },
+        "isBreaking": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "districts": { "type": "array", "items": { "type": "string" } },
+        "sourceUrls": { "type": "array", "items": { "type": "string" } },
+        "editHistory": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "categoryId", "authorId", "status"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Site settings",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "liveVideoUrl": { "type": "string" },
+        "liveVideoType": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "facebookUrl": { "type": "string" },
+        "twitterUrl": { "type": "string" },
+        "youtubeUrl": { "type": "string" }
+      }
+    },
+    "Ad": {
+      "title": "Ad",
+      "description": "Advertisement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "position": { "type": "string", "enum": ["sidebar", "homepage_mid", "article_bottom", "header"] },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "imageUrl", "linkUrl", "position", "isActive"]
+    },
+    "CommunityPost": {
+      "title": "CommunityPost",
+      "description": "Community post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "removed", "flagged"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "authorId", "status"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Premium event story",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "tagline": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "location": { "type": "string" },
+        "featuredImage": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published"] }
+      },
+      "required": ["title", "date", "status"]
+    },
+    "Model": {
+      "title": "Model",
+      "description": "Professional model profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "profileImage": { "type": "string" },
+        "coverImages": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string", "enum": ["Fashion", "Commercial", "Actor", "Influencer"] },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "location": { "type": "string" },
+        "bio": { "type": "string" },
+        "age": { "type": "number" },
+        "height": { "type": "string" },
+        "weight": { "type": "string" },
+        "experienceYears": { "type": "number" },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "isVerified": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "profileImage", "category", "gender", "location"]
+    },
+    "ModelInquiry": {
+      "title": "ModelInquiry",
+      "description": "Booking inquiry for a model",
+      "type": "object",
+      "properties": {
+        "modelId": { "type": "string" },
+        "modelName": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "projectType": { "type": "string", "enum": ["Photoshoot", "Music Video", "Movie", "Advertisement", "Other"] },
+        "budget": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["modelId", "name", "email", "projectType", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User profiles"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "Category" },
+      "description": "News categories"
+    },
+    "/articles/{articleId}": {
+      "schema": { "$ref": "Article" },
+      "description": "News articles"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "Setting" },
+      "description": "Site settings"
+    },
+    "/ads/{adId}": {
+      "schema": { "$ref": "Ad" },
+      "description": "Advertisements"
+    },
+    "/communityPosts/{postId}": {
+      "schema": { "$ref": "CommunityPost" },
+      "description": "Community posts"
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "Event" },
+      "description": "Events"
+    },
+    "/models/{modelId}": {
+      "schema": { "$ref": "Model" },
+      "description": "Professional models"
+    },
+    "/modelInquiries/{inquiryId}": {
+      "schema": { "$ref": "ModelInquiry" },
+      "description": "Model booking inquiries"
+    }
+  }
+}
